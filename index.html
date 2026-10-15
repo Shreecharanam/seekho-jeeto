@@ -134,7 +134,7 @@
         <div class="chip" data-mode="challenge" data-k="6">Challenge mode</div>
       </div>
       <button class="btn" onclick="startStudy()" data-k="4">Start</button>
-      <button class="btn ghost" style="margin-top:10px" onclick="showScreen('scr-home')">← <span data-k="0">Study</span></button>
+      <button class="btn ghost" style="margin-top:10px" onclick="go('scr-home')">← <span data-k="0">Study</span></button>
     </div>
   </section>
 
@@ -144,12 +144,13 @@
       <p class="label" data-k="1">Values and Religion</p>
       <div class="tabs" id="tradTabs"></div>
       <button class="btn" onclick="startSanskar()" data-k="4">Start</button>
-      <button class="btn ghost" style="margin-top:10px" onclick="showScreen('scr-home')">← Home</button>
+      <button class="btn ghost" style="margin-top:10px" onclick="go('scr-home')">← Home</button>
     </div>
   </section>
 
   <!-- GAME -->
   <section class="screen" id="scr-game">
+    <div style="margin-bottom:10px"><button class="chip" onclick="go('scr-home')">← Home</button></div>
     <div class="hud">
       <span class="pill"><span data-k="7">Score</span>: <span class="sc" id="hudScore">0</span></span>
       <span class="pill" id="livesPill" style="display:none"><span data-k="9">Lives</span>: <span class="lv" id="hudLives">3</span></span>
@@ -177,7 +178,7 @@
       <input class="file" type="file" id="certPhoto" accept="image/*">
       <canvas class="cert" id="certCanvas" width="1000" height="700"></canvas>
       <button class="btn" onclick="downloadCert()" data-k="18">Download certificate</button>
-      <button class="btn secondary" style="margin-top:10px" onclick="location.reload()" data-k="19">Play again</button>
+      <button class="btn secondary" style="margin-top:10px" onclick="go('scr-home')" data-k="19">Play again</button>
       <p class="hint">Certificate aapki site ke naam se banega — badalna ho toh bata dena.</p>
     </div>
   </section>
@@ -196,7 +197,7 @@
       <p class="hint" data-r2="2">One voucher per mobile number</p>
       <div id="rwVoucher" style="display:none"></div>
       <a class="btn ghost" style="margin-top:10px; display:block; text-align:center; text-decoration:none" href="https://shreecharanam.github.io/shreecharanam-website" target="_blank" rel="noopener">🛒 Shreecharanam Vedic Spices</a>
-      <button class="btn ghost" style="margin-top:12px" onclick="showScreen('scr-home')">← Home</button>
+      <button class="btn ghost" style="margin-top:12px" onclick="go('scr-home')">← Home</button>
     </div>
   </section>
 
@@ -391,12 +392,27 @@ const TRADITIONS = {
 let state = { list:[], idx:0, score:0, streak:0, lives:3, mode:"practice", answered:false, timer:null, timeLeft:0, title:"" };
 
 function showScreen(id){
+  clearInterval(state.timer);
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
   window.scrollTo(0,0);
 }
-function openStudy(){ buildClassChips(); showScreen("scr-setup"); }
-function openSanskar(){ buildTradTabs(); showScreen("scr-sanskar"); }
+function go(id){
+  if(document.getElementById(id).classList.contains("active")) return;
+  history.pushState({scr:id}, "", "");
+  showScreen(id);
+}
+function replaceScreen(id){
+  history.replaceState({scr:id}, "", "");
+  showScreen(id);
+}
+window.addEventListener("popstate", (e) => {
+  const scr = (e.state && e.state.scr) || "scr-home";
+  showScreen(scr);
+  if(scr === "scr-rewards") renderRewards();
+});
+function openStudy(){ buildClassChips(); go("scr-setup"); }
+function openSanskar(){ buildTradTabs(); go("scr-sanskar"); }
 
 // class chips
 function buildClassChips(){
@@ -451,7 +467,7 @@ function beginQuiz(list, mode){
   document.getElementById("livesPill").style.display = (mode==="challenge") ? "inline-block" : "none";
   document.getElementById("hudLives").textContent = 3;
   document.getElementById("timerBar").style.display = (mode==="challenge") ? "block" : "none";
-  showScreen("scr-game");
+  go("scr-game");
   renderQ();
 }
 
@@ -544,7 +560,7 @@ function finish(){
   document.getElementById("resMsg").textContent = msg + "  (" + state.title + ")";
   addPoints(state.score);   // save earned points to the wallet for rewards
   drawCert();
-  showScreen("scr-result");
+  replaceScreen("scr-result");
 }
 
 /* ============================================================
@@ -634,7 +650,7 @@ function addPoints(n){ localStorage.setItem(WKEY, getPoints() + n); }
 function rand(n){ const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; for(let i=0;i<n;i++) s += c[Math.floor(Math.random()*c.length)]; return s; }
 function dateCompact(){ const d = new Date(); return String(d.getDate()).padStart(2,"0") + String(d.getMonth()+1).padStart(2,"0") + String(d.getFullYear()).slice(2); }
 
-function openRewards(){ renderRewards(); showScreen("scr-rewards"); }
+function openRewards(){ renderRewards(); go("scr-rewards"); }
 function renderRewards(){
   const p = getPoints();
   document.getElementById("rwPoints").textContent = p;
